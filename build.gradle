@@ -1,0 +1,55 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.2.51'
+    id 'maven-publish'
+}
+
+def timestampFormat = new java.text.SimpleDateFormat('yyyyMMdd.HHmmss')
+timestampFormat.timeZone = TimeZone.getTimeZone("UTC")
+Date buildTime = new Date()
+
+group = 'com.incquerylabs.massifwrapper'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.8'
+    distributionType = 'all'
+}
+
+configurations {
+    preCompile
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://repo.eclipse.org/content/repositories/viatra-releases/' }
+}
+
+allprojects {
+    configurations.all {
+        // How often to check for SNAPSHOT versions (e.g. VIATRA)
+        // To check on every build, change to `0, 'seconds'`
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+}
+
+ext{
+    buildTimestamp = timestampFormat.format(buildTime)
+    release = false
+    distributionType = 'SNAPSHOT'
+    distributionSuffix = null
+    baseVersion = '0.7.0'
+    shadowJarArchiveName = "massif-wrapper-rest-server-runnable.jar"
+    deploymentPackageName = "massif-wrapper-rest-server-package.zip"
+
+    deployUser = hasProperty('iql.nexus.user') ? iql.nexus.user : System.getenv('NEXUS_USER')
+    deployPassword = hasProperty('iql.nexus.password') ? iql.nexus.password : System.getenv('NEXUS_PASSWORD')
+    deployUrl = "build/repository"
+
+    viatraVersion = '2.0.2'
+    emfVersion = '2.15.0'
+    massifVersion = '0.7.0-SNAPSHOT'
+    vertxVersion = '3.5.1'
+    kotlinVersion = '1.2.51'
+}
+
+

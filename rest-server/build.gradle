@@ -1,0 +1,147 @@
+apply plugin: 'application'
+// Apply the java-library plugin to add support for Java Library
+apply plugin: 'java-library'
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+apply plugin: 'maven'
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+
+mainClassName = 'com.incquerylabs.massifwrapper.rest.server.ServerRunnerKt'
+
+repositories {
+    jcenter()
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url 'https://repo.eclipse.org/content/groups/releases/'
+    }
+
+    maven {
+        url 'https://repo.eclipse.org/content/groups/viatra2/'
+    }
+
+    maven {
+        url 'https://build.incquerylabs.com/nexus/repository/massif/'
+    }
+}
+
+dependencies {
+    // service proxy generation
+    kapt group: 'io.vertx', name: 'vertx-codegen', version: vertxVersion, classifier: 'processor'
+    compileOnly group: 'io.vertx', name: 'vertx-codegen', version: vertxVersion
+
+    implementation group: 'io.vertx',                name: 'vertx-lang-kotlin',   version: vertxVersion
+    implementation group: 'io.vertx',                name: 'vertx-service-proxy', version: vertxVersion
+    implementation group: 'io.vertx',                name: 'vertx-web',           version: vertxVersion
+    implementation group: 'io.vertx',                name: 'vertx-web-client',    version: vertxVersion
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+
+    // VIATRA Query Runtime
+    compile group: "org.eclipse.viatra", name: "viatra-query-runtime", version: viatraVersion
+    compile group: "org.eclipse.viatra", name: "viatra-querybasedfeatures", version: viatraVersion
+
+    // MASSIF
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.common", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.simulink", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.simulink.api", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.simulink.cli", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.simulink.incquery", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.communication", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "hu.bme.mit.massif.communication.commandevaluation", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "br.com.embraer.massif.commandevaluation.base", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "br.com.embraer.massif.commandevaluation.client", version: massifVersion
+    compile group: "hu.bme.mit.massif", name: "massif-matlabengine", version: massifVersion
+
+    // EMF
+    compile group: "org.eclipse.emf", name: "org.eclipse.emf.ecore", version: emfVersion
+    compile group: "org.eclipse.emf", name: "org.eclipse.emf.common", version: emfVersion
+    compile group: "org.eclipse.emf", name: "org.eclipse.emf.ecore.xmi", version: emfVersion
+
+    // ECLIPSE
+    compile group: "org.eclipse.core", name: "org.eclipse.core.runtime", version: "3.7.0"
+
+    // MATLAB
+    shadow files("$System.env.MATLABROOT" + "/extern/engines/java/jar/engine.jar")
+}
+
+kapt {
+    useBuildCache = true
+}
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.2'
+    }
+}
+
+shadowJar{
+    archiveName = shadowJarArchiveName
+}
+
+task packageRunnableJar(type: Zip) {
+    archiveName = deploymentPackageName
+    destinationDir = file("${buildDir}/deployment")
+    from "../massif_scripts/massif_functions.m"
+    from shadowJar
+}
+
+publishing {
+    repositories {
+        maven {
+            url deployUrl
+            if (deployUser != null && !deployUrl.contains("${rootDir}")) {
+                credentials {
+                    username = deployUser
+                    password = deployPassword
+                }
+            }
+        }
+    }
+    publications {
+        create('zip', MavenPublication) {
+            version = baseVersion
+            if(release.toBoolean()){
+                if (distributionType == 'MILESTONE') {
+                    version += "-milestone-$distributionSuffix"
+                } else if (distributionType == 'RC') {
+                    version += "-rc-$distributionSuffix"
+                } else {
+                    version += '-release'
+                }
+            } else {
+                version += '-SNAPSHOT'
+            }
+            artifact source: packageRunnableJar, extension: 'zip'
+            artifactId 'massif-wrapper-rest-server-deployment'
+        }
+
+        maven(MavenPublication){
+            version = baseVersion
+            if(release.toBoolean()){
+                if (distributionType == 'MILESTONE') {
+                    version += "-milestone-$distributionSuffix"
+                } else if (distributionType == 'RC') {
+                    version += "-rc-$distributionSuffix"
+                } else {
+                    version += '-release'
+                }
+            } else {
+                version += '-SNAPSHOT'
+            }
+            artifactId = 'rest-server'
+            from components.java
+        }
+    }
+}

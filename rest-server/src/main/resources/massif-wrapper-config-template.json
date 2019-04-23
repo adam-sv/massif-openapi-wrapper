@@ -1,0 +1,26 @@
+{
+  /* Port where the rest server is listening on. */
+  "restAPIPort" : 8234,
+  /* Flag to use RMI instead of the MATLAB Engine as a connector to MATLAB. We discourage using it,
+   * since the engine connector is much faster.
+   * If set to true, matlabRMIAddress and matlabRMIPort should be specified, else it can be left out from
+   * the config.
+   */
+  "useRMIConnection": false,
+  /* The location where the temp files should be saved during exporting and importing */
+  "tempModelFileLocation": "C:/Users/massif-wrapper/temp/",
+  /* The name of the temp files created by the massif-wrapper */
+  "mdlTempModelName": "temp_mdl",
+  "emfTempModelName": "temp_emf",
+  "scriptTempName": "temp_script"
+}
+
+/* You only have to provide the temp model file location as absolute path:
+ * The rest can be left as is:
+
+{
+  "tempModelFileLocation": "C:/Users/massif-wrapper/temp/",
+}
+
+*/
+
